@@ -1,0 +1,11 @@
+builders:
+  model_helper:
+    import: package:model_helper/model_helper.dart
+    builder_factories: []
+    build_extensions:
+      .dart:
+        - .g.part
+    build_to: cache
+    auto_apply: dependents
+    applies_builders:
+      - source_gen|combining_builder
