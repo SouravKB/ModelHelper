@@ -1,7 +1,9 @@
 builders:
   model_helper:
     import: package:model_helper/model_helper.dart
-    builder_factories: []
+    builder_factories:
+      - sqflHelperBuilder
+      - cfsHelperBuilder
     build_extensions:
       .dart:
         - .g.part
