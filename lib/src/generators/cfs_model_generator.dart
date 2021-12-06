@@ -67,6 +67,14 @@ class CfsModelGenerator extends GeneratorForAnnotation<CfsModel> {
     model.fields.forEach((field) {
       if (field == model.docKey)
         code.writeln('  ${field.name}: snap.id,');
+      else if (field.type.isDartCoreInt) if (field.type.nullabilitySuffix.index == 2)
+        code.writeln('  ${field.name}: (snap[${field.keyField}] as num).toInt(),');
+      else
+        code.writeln('  ${field.name}: (snap[${field.keyField}] as num?)?.toInt(),');
+      else if (field.type.isDartCoreDouble) if (field.type.nullabilitySuffix.index == 2)
+        code.writeln('  ${field.name}: (snap[${field.keyField}] as num).toDouble(),');
+      else
+        code.writeln('  ${field.name}: (snap[${field.keyField}] as num?)?.toDouble(),');
       else
         code.writeln('  ${field.name}: snap[${field.keyField}] as ${field.type},');
     });
