@@ -4,6 +4,7 @@ import 'package:model_annotations/model_annotations.dart';
 import 'package:model_helper/src/util/cfs_model_contents.dart';
 import 'package:model_helper/src/util/string_extensions.dart';
 import 'package:model_helper/src/util/type_extensions.dart';
+import 'package:model_helper/src/util/type_suffix_extension.dart';
 import 'package:source_gen/source_gen.dart';
 
 class CfsModelGenerator extends GeneratorForAnnotation<CfsModel> {
@@ -39,9 +40,6 @@ class CfsModelGenerator extends GeneratorForAnnotation<CfsModel> {
     model.fields.forEach((field) {
       field.keyField = "key${field.name.capitalize()}";
       code.writeln('  static const ${field.keyField} = "${field.name}";');
-
-      if (!field.type.isValidType())
-        throw Exception('${model.modelType} cannot contain variable of type ${field.type}');
     });
 
     return code.toString();
@@ -52,7 +50,7 @@ class CfsModelGenerator extends GeneratorForAnnotation<CfsModel> {
     code.writeln('Map<String, Object?> toMap() => {');
 
     model.fields.forEach((field) {
-      code.writeln('  ${field.keyField}: ${field.name},');
+      code.writeln('  ${field.keyField}: ${_getToMapString(field.type, field.name)},');
     });
 
     code.writeln('};');
@@ -65,36 +63,58 @@ class CfsModelGenerator extends GeneratorForAnnotation<CfsModel> {
         'static ${model.cls.thisType} fromSnapshot(DocumentSnapshot<Map<String, Object?>> snap) => ${model.cls.thisType}(');
 
     model.fields.forEach((field) {
-      if (field == model.docKey)
+      if (field == model.docKey) {
         code.writeln('  ${field.name}: snap.id,');
-      else if (field.type.isDartCoreInt) if (field.type.nullabilitySuffix.index == 2)
-        code.writeln('  ${field.name}: (snap[${field.keyField}] as num).toInt(),');
-      else
-        code.writeln('  ${field.name}: (snap[${field.keyField}] as num?)?.toInt(),');
-      else if (field.type.isDartCoreDouble) if (field.type.nullabilitySuffix.index == 2)
-        code.writeln('  ${field.name}: (snap[${field.keyField}] as num).toDouble(),');
-      else
-        code.writeln('  ${field.name}: (snap[${field.keyField}] as num?)?.toDouble(),');
-      else
-        code.writeln('  ${field.name}: snap[${field.keyField}] as ${field.type},');
+      } else {
+        final fieldName = 'snap[${field.keyField}]';
+        code.writeln('  ${field.name}: ${_getFromSnapString(field.type, fieldName)},');
+      }
     });
 
     code.writeln(');');
     return code.toString();
   }
-}
 
-extension _ValidTypes on DartType {
-  bool isValidType() {
-    return isDartCoreNum ||
-        isDartCoreInt ||
-        isDartCoreDouble ||
-        isDartCoreBool ||
-        isDartCoreString ||
-        isDartCoreList ||
-        isDartCoreMap ||
-        isUint8List ||
-        isDateTime;
+  String _getToMapString(DartType type, String field) {
+    if (type.isDartCoreInt ||
+        type.isDartCoreDouble ||
+        type.isDartCoreNum ||
+        type.isDartCoreBool ||
+        type.isDartCoreString ||
+        type.isDartCoreList ||
+        type.isDartCoreMap ||
+        type.isUint8List ||
+        type.isDateTime) {
+      return '$field';
+    }
+    throw Exception('Invalid type "$type" in class annotated with "CfsModel" annotation.');
+  }
+
+  String _getFromSnapString(DartType type, String field) {
+    if (type.isDartCoreInt) {
+      return '($field as num${type.nullSuffix})${type.nullSuffix}.toInt()';
+    }
+    if (type.isDartCoreDouble) {
+      return '($field as num${type.nullSuffix})${type.nullSuffix}.toDouble()';
+    }
+    if (type.isDartCoreNum || type.isDartCoreBool || type.isDartCoreString) {
+      return '$field as $type';
+    }
+    if (type.isDartCoreList) {
+      final paramType = (type as ParameterizedType).typeArguments[0];
+      return '($field as List${type.nullSuffix})${type.nullSuffix}.map((item) => ${_getFromSnapString(paramType, 'item')})${type.nullSuffix}.toList(growable: false)';
+    }
+    if (type.isDartCoreMap) {
+      final paramType = (type as ParameterizedType).typeArguments[1];
+      return '($field as Map${type.nullSuffix})${type.nullSuffix}.map((key, value) => MapEntry(key, ${_getFromSnapString(paramType, 'value')}))';
+    }
+    if (type.isUint8List) {
+      return '($field as Blob${type.nullSuffix})${type.nullSuffix}.bytes';
+    }
+    if (type.isDateTime) {
+      return '($field as Timestamp${type.nullSuffix})${type.nullSuffix}.toDate()';
+    }
+    throw Exception('Invalid type "$type" in class annotated with "CfsModel" annotation.');
   }
 }
 
