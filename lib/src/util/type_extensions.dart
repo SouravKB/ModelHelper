@@ -25,3 +25,42 @@ extension DateTimeType on DartType {
     }
   }
 }
+
+extension FireBlobType on DartType {
+  bool get isFireBlob {
+    switch (this.toString()) {
+      case 'Blob':
+      case 'Blob?':
+      case 'Blob*':
+        return true;
+      default:
+        return false;
+    }
+  }
+}
+
+extension FireGeoPointType on DartType {
+  bool get isFireGeoPoint {
+    switch (this.toString()) {
+      case 'GeoPoint':
+      case 'GeoPoint?':
+      case 'GeoPoint*':
+        return true;
+      default:
+        return false;
+    }
+  }
+}
+
+extension FireTimestampType on DartType {
+  bool get isFireTimestamp {
+    switch (this.toString()) {
+      case 'Timestamp':
+      case 'Timestamp?':
+      case 'Timestamp*':
+        return true;
+      default:
+        return false;
+    }
+  }
+}

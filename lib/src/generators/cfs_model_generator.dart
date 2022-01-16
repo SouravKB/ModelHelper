@@ -84,7 +84,10 @@ class CfsModelGenerator extends GeneratorForAnnotation<CfsModel> {
         type.isDartCoreList ||
         type.isDartCoreMap ||
         type.isUint8List ||
-        type.isDateTime) {
+        type.isFireBlob ||
+        type.isDateTime ||
+        type.isFireTimestamp ||
+        type.isFireGeoPoint) {
       return '$field';
     }
     throw Exception('Invalid type "$type" in class annotated with "CfsModel" annotation.');
@@ -111,8 +114,17 @@ class CfsModelGenerator extends GeneratorForAnnotation<CfsModel> {
     if (type.isUint8List) {
       return '($field as Blob${type.nullSuffix})${type.nullSuffix}.bytes';
     }
+    if (type.isFireBlob) {
+      return '$field as Blob${type.nullSuffix}';
+    }
     if (type.isDateTime) {
       return '($field as Timestamp${type.nullSuffix})${type.nullSuffix}.toDate()';
+    }
+    if (type.isFireTimestamp) {
+      return '$field as Timestamp${type.nullSuffix}';
+    }
+    if (type.isFireGeoPoint) {
+      return '$field as GeoPoint${type.nullSuffix}';
     }
     throw Exception('Invalid type "$type" in class annotated with "CfsModel" annotation.');
   }
